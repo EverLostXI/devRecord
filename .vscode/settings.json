@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "iomanip": "cpp",
+        "ctime": "cpp"
+    },
+    "cmake.sourceDirectory": "D:/dev/项目/聊天室"
+}
