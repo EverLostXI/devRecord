@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <cstring>
+#include <map>
 // 获取时间戳
 #include <ctime>
 // Windows提供的socket API
@@ -10,10 +11,8 @@
 // 生成服务器日志
 #include <fstream>
 #include <iomanip>
-// C++11线程库
+// C++ 11线程库
 #include <thread>
-// 用户
-#include <map>
 
 using namespace std;
 
@@ -90,7 +89,7 @@ void CloseLogFile() {
 
 // 链接WinSock库
 // #pragma comment(lib, "ws2_32.lib") 非MSVC编译器无法识别，必须手动链接Winsock库
-// 服务端已经用CMake链接好了，客户端程序也需要链接一下
+// 服务端已经用CMake链接
 
 // 初始化和清理Winsock
 bool InitializeWinSock() {
