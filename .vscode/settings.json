@@ -3,5 +3,6 @@
         "iomanip": "cpp",
         "ctime": "cpp"
     },
-    "cmake.sourceDirectory": "D:/dev/项目/聊天室"
+    "cmake.sourceDirectory": "D:/dev/项目/聊天室",
+    "C_Cpp.errorSquiggles": "disabled"
 }

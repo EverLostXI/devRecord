@@ -13,8 +13,18 @@
 #include <iomanip>
 // C++ 11线程库
 #include <thread>
+// 链接WinSock库
+// #pragma comment(lib, "ws2_32.lib") 非MSVC编译器无法识别，必须手动链接Winsock库
+// 服务端已经用CMake链接
+
 
 using namespace std;
+
+
+// 设置服务器端口号
+const int PORT = 8888;
+// 设置listen连接队列长度
+const int BACKLOG = 5;
 
 // 获取时间戳
 string TimeStamp() {
@@ -87,10 +97,6 @@ void CloseLogFile() {
 }
 
 
-// 链接WinSock库
-// #pragma comment(lib, "ws2_32.lib") 非MSVC编译器无法识别，必须手动链接Winsock库
-// 服务端已经用CMake链接
-
 // 初始化和清理Winsock
 bool InitializeWinSock() {
     WSADATA wsadata;
@@ -109,9 +115,19 @@ void CleanupWinSock() {
 }
 
 
-// 设定服务器的端口和缓冲区大小
-const int PORT = 8888;
-const int BUFFER_SIZE = 1024;
+// 配置服务器地址
+int SetupServerAddress(const int port, sockaddr_in& address_info) {
+    if (port <= 0 || port > 65535) {
+        WriteLog(LogLevel::FATAL_LEVEL, "配置的端口号无效");
+        return -1;
+    }
+    memset(&address_info, 0, sizeof(address_info)); // 清零结构体
+    address_info.sin_family = AF_INET; // 设置地址族为IPv4
+    address_info.sin_addr.s_addr = htonl(INADDR_ANY); //设置IP地址：监听所有接口（转换为网络字节序）
+    address_info.sin_port = htons(port); // 设置端口号（转换为网络字节序）
+    return 0;
+}
+
 
 
 // 存储账号密码
@@ -129,6 +145,8 @@ public:
     // 认证状态
     string username;
     bool is_authenticated;
+    // 最后收到心跳时间
+    time_t last_heartbeat_time;
 
 public:
     // 构造函数：初始化用户属性
@@ -137,7 +155,8 @@ public:
         client_ip(ip), 
         client_port(port), 
         username(""), // 初始为空
-        is_authenticated(false) // 初始未认证
+        is_authenticated(false), // 初始未认证
+        last_heartbeat_time(time(NULL)) // 初始化为当前时间
     { // 向日志中记录用户登录
         string logmessage = "用户登录: IP = " + client_ip + "端口 = " + to_string(client_port);
         WriteLog(LogLevel::INFO_LEVEL, logmessage);
@@ -146,6 +165,11 @@ public:
     void authenticate(const string& user) {
         this->username = user;
         this->is_authenticated = true;
+    }
+
+    // 更新心跳方法
+    void updateHeartbeat() {
+        last_heartbeat_time = time(NULL);
     }
 };
 
@@ -176,11 +200,19 @@ bool AuthenticateCredential(const string &inputUsername, const string &inputPass
     消息本体长度
     消息本体
 
+客户端普通消息封装函数
 void CommonMessage() {
 
 }
 
 */
+
+
+// 工作线程入口函数
+void HandleClient(ClientSession* sessionPtr) {
+    // 线程启动后，所有操作都使用 sessionPtr->socket_fd 来进行通信
+
+}
 
 
 int main() {
@@ -204,5 +236,40 @@ int main() {
     }
     WriteLog(LogLevel::INFO_LEVEL, "Socket 创建成功");
 
-    cin.get();
+    // 调用配置地址函数
+    sockaddr_in service_address;
+    int iResult;
+    if (SetupServerAddress(PORT, service_address) != 0) {
+        WriteLog(LogLevel::FATAL_LEVEL, "服务器地址配置失败");
+        closesocket(listenSocket);
+        CleanupWinsock();
+        CloseLogFile();
+        return 1;
+    }
+    WriteLog(LogLevel::INFO_LEVEL, "服务器地址配置成功");
+
+    // 执行bind
+    iResult = bind(listenSocket, (SOCKADDR*)&service_address, sizeof(service_address));
+
+    if (iResult == SOCKET_ERROR) {
+        string errormessage = "Bind失败: " + to_string(WSAGetLastError());
+        WriteLog(LogLevel::FATAL_LEVEL, errormessage);
+        closesocket(listenSocket);
+        CleaupWinSock();
+        CloseLogFile();
+        return 1;
+    }
+    WriteLog(LogLevel::INFO_LEVEL, "Socket 成功绑定到端口 " + std::to_string(LISTEN_PORT));
+
+    // 执行listen
+    iResult = listen(listenSocket, BACKLOG);
+    if(iResult == SOCKET_ERROR) {
+        string errormessage = "Listen 失败: " + to_string(WSAGetLastError());
+        WriteLog(LogLevel::FATAL_LEVEL, erroemessage);
+        closesocket(listenSocket);
+        CleanupWinSock();
+        CloseLogFile();
+        return 1;
+    }
+    WriteLog(LogLevel::INFO_LEVEL, "服务器开始监听连接...")
 }
